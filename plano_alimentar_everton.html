@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Plano Alimentar">
+<title>🍽️ Plano Alimentar — Everton</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+
+  .header { background: #1a1a1a; color: white; padding: 20px 16px 16px; text-align: center; position: sticky; top: 0; z-index: 100; }
+  .header h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .header p { font-size: 12px; color: #999; margin-top: 2px; }
+
+  .day-tabs { display: flex; gap: 8px; padding: 14px 16px 10px; overflow-x: auto; background: #f5f5f0; position: sticky; top: 64px; z-index: 99; border-bottom: 1px solid #e5e5e5; }
+  .day-tabs::-webkit-scrollbar { display: none; }
+  .day-btn { flex-shrink: 0; padding: 8px 14px; border-radius: 12px; border: 2px solid #ddd; background: white; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .day-btn.active { background: #1a1a1a; color: white; border-color: #1a1a1a; }
+  .day-sub { font-size: 10px; opacity: 0.6; display: block; margin-top: 2px; }
+
+  .macros-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px; }
+  .macro-chip { border-radius: 12px; padding: 10px 6px; text-align: center; }
+  .macro-chip .val { font-size: 18px; font-weight: 900; display: block; }
+  .macro-chip .lbl { font-size: 10px; opacity: 0.8; }
+  .chip-kcal { background: #1a1a1a; color: white; }
+  .chip-prot { background: #ef4444; color: white; }
+  .chip-carbo { background: #f59e0b; color: #1a1a1a; }
+  .chip-gord { background: #3b82f6; color: white; }
+
+  .alert-box { margin: 0 16px 8px; padding: 12px 14px; border-radius: 14px; font-size: 13px; line-height: 1.5; }
+  .alert-jiu { background: #fff7ed; border: 1.5px solid #fed7aa; color: #9a3412; }
+  .alert-rest { background: #faf5ff; border: 1.5px solid #e9d5ff; color: #6b21a8; }
+
+  .content { padding: 0 16px 100px; }
+
+  .meal-card { background: white; border-radius: 18px; margin-bottom: 12px; overflow: hidden; border: 2px solid #eee; }
+  .meal-header { width: 100%; padding: 16px; display: flex; align-items: center; justify-content: space-between; background: none; border: none; cursor: pointer; text-align: left; }
+  .meal-title { font-size: 17px; font-weight: 800; color: #1a1a1a; }
+  .meal-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .meta-tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+  .tag-p { background: #fee2e2; color: #b91c1c; }
+  .tag-c { background: #fef3c7; color: #92400e; }
+  .tag-g { background: #dbeafe; color: #1e40af; }
+  .tag-k { background: #f3f4f6; color: #374151; }
+  .chevron { font-size: 18px; color: #999; transition: transform 0.2s; flex-shrink: 0; }
+  .chevron.open { transform: rotate(180deg); }
+
+  .meal-body { display: none; padding: 0 14px 14px; }
+  .meal-body.open { display: block; }
+
+  .section { margin-bottom: 14px; border-radius: 12px; overflow: hidden; border: 1px solid #eee; }
+  .section-header { width: 100%; padding: 10px 14px; font-size: 13px; font-weight: 700; color: white; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .section-body { display: none; }
+  .section-body.open { display: block; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; background: #f9fafb; }
+  tbody tr { border-bottom: 1px solid #f3f4f6; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr.complement { background: #fffbeb; }
+  tbody td { padding: 10px 10px; vertical-align: top; }
+  .food-name { font-weight: 600; color: #1a1a1a; display: block; }
+  .food-obs { font-size: 11px; color: #d97706; font-weight: 600; margin-top: 2px; display: block; }
+  .food-obs.normal { color: #9ca3af; font-weight: 400; }
+  td.macro { font-weight: 700; white-space: nowrap; }
+  td.macro-p { color: #dc2626; }
+  td.macro-c { color: #d97706; }
+  td.macro-g { color: #2563eb; }
+  td.macro-ep { color: #ef4444; font-size: 12px; }
+  td.kcal { color: #9ca3af; }
+  .veg-note { font-size: 11px; color: #9ca3af; font-style: italic; margin-top: 8px; padding: 0 2px; line-height: 1.4; }
+
+  .rules-card, .suplem-card { background: white; border-radius: 18px; margin: 12px 16px 0; padding: 16px; border: 1px solid #eee; }
+  .card-title { font-size: 15px; font-weight: 800; margin-bottom: 12px; color: #1a1a1a; }
+  .rules-card ul { list-style: none; }
+  .rules-card li { font-size: 13px; color: #4b5563; padding: 5px 0; border-bottom: 1px solid #f3f4f6; }
+  .rules-card li:last-child { border-bottom: none; }
+  .suplem-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid #f3f4f6; }
+  .suplem-row:last-child { border-bottom: none; }
+  .suplem-row span:last-child { color: #9ca3af; }
+
+  .footer { text-align: center; font-size: 11px; color: #ccc; padding: 20px 16px 30px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍽️ Plano Alimentar</h1>
+  <p>Modular · Cozido · Everton</p>
+</div>
+
+<div class="day-tabs">
+  <button class="day-btn active" onclick="setDay('musculacao', this)">
+    💪 Musculação<span class="day-sub">Qui / Sex / Seg</span>
+  </button>
+  <button class="day-btn" onclick="setDay('jiu', this)">
+    🥋 Jiu-Jitsu<span class="day-sub">Sáb / Qua</span>
+  </button>
+  <button class="day-btn" onclick="setDay('descanso', this)">
+    😴 Descanso<span class="day-sub">Dom</span>
+  </button>
+</div>
+
+<div class="macros-bar">
+  <div class="macro-chip chip-kcal"><span class="val" id="m-kcal">1900</span><span class="lbl">Kcal</span></div>
+  <div class="macro-chip chip-prot"><span class="val" id="m-prot">150g</span><span class="lbl">Proteína</span></div>
+  <div class="macro-chip chip-carbo"><span class="val" id="m-carbo">185g</span><span class="lbl">Carbos</span></div>
+  <div class="macro-chip chip-gord"><span class="val" id="m-gord">65g</span><span class="lbl">Gordura</span></div>
+</div>
+
+<div id="alert-jiu" class="alert-box alert-jiu" style="display:none">
+  <strong>🥋 Pré-Jiu (30min antes):</strong> 1 banana + 1 scoop whey <span style="font-size:12px">(+225 kcal | +25g P | +25g C)</span>
+</div>
+<div id="alert-rest" class="alert-box alert-rest" style="display:none">
+  <strong>😴 Dia descanso:</strong> Reduza carbos · Arroz → 150g cozido · Sem banana extra · Lanche menor
+</div>
+
+<div class="content">
+
+  <!-- CAFÉ DA MANHÃ -->
+  <div class="meal-card" style="border-color:#F59E0B">
+    <button class="meal-header" onclick="toggleMeal(this)" style="background:#fffbeb">
+      <div>
+        <div class="meal-title">☀️ Café da Manhã</div>
+        <div class="meal-meta">
+          <span class="meta-tag tag-p">P: 35-40g</span>
+          <span class="meta-tag tag-c">C: 30-40g</span>
+          <span class="meta-tag tag-g">G: 18-22g</span>
+          <span class="meta-tag tag-k">~450 kcal</span>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </button>
+    <div class="meal-body">
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#F59E0B">
+          🥩 Proteínas — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Prot</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Iogurte grego desnatado caseiro</span><span class="food-obs normal">Principal</span></td><td>200g</td><td class="macro macro-p">20g</td><td class="kcal">130</td></tr>
+              <tr><td><span class="food-name">Whey protein</span><span class="food-obs normal">Principal</span></td><td>1 scoop (30g pó)</td><td class="macro macro-p">24g</td><td class="kcal">120</td></tr>
+              <tr><td><span class="food-name">Queijo cottage</span><span class="food-obs normal">Principal</span></td><td>170g</td><td class="macro macro-p">20g</td><td class="kcal">170</td></tr>
+              <tr><td><span class="food-name">Queijo frescal/branco</span><span class="food-obs normal">Principal</span></td><td>100g</td><td class="macro macro-p">18g</td><td class="kcal">150</td></tr>
+              <tr><td><span class="food-name">Peito de peru fatiado</span><span class="food-obs normal">Principal</span></td><td>100g</td><td class="macro macro-p">22g</td><td class="kcal">110</td></tr>
+              <tr><td><span class="food-name">Frango desfiado</span><span class="food-obs normal">Principal</span></td><td>100g</td><td class="macro macro-p">30g</td><td class="kcal">165</td></tr>
+              <tr class="complement"><td><span class="food-name">Ovos cozidos (gema cremosa 8min)</span><span class="food-obs">⚠️ Complemento — combine com outra proteína</span></td><td>3 unidades</td><td class="macro macro-p">21g</td><td class="kcal">210</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#F59E0B">
+          🌾 Carboidratos — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Carbo</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Aveia em flocos</span></td><td>40g</td><td class="macro macro-c">27g</td><td class="kcal">150</td></tr>
+              <tr><td><span class="food-name">Cuscuz (flocão)</span></td><td>120g cozido</td><td class="macro macro-c">33g</td><td class="kcal">140</td></tr>
+              <tr><td><span class="food-name">Tapioca (goma)</span></td><td>50g</td><td class="macro macro-c">41g</td><td class="kcal">170</td></tr>
+              <tr><td><span class="food-name">Pão integral</span></td><td>2 fatias</td><td class="macro macro-c">24g</td><td class="kcal">130</td></tr>
+              <tr><td><span class="food-name">Pão francês</span></td><td>1 unidade (50g)</td><td class="macro macro-c">28g</td><td class="kcal">135</td></tr>
+              <tr><td><span class="food-name">Batata doce cozida</span></td><td>150g</td><td class="macro macro-c">37g</td><td class="kcal">165</td></tr>
+              <tr><td><span class="food-name">Banana</span></td><td>1 média</td><td class="macro macro-c">25g</td><td class="kcal">105</td></tr>
+              <tr><td><span class="food-name">Mamão</span></td><td>200g</td><td class="macro macro-c">20g</td><td class="kcal">80</td></tr>
+              <tr><td><span class="food-name">Granola</span></td><td>30g</td><td class="macro macro-c">21g</td><td class="kcal">130</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#F59E0B">
+          🫒 Gorduras — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Gord</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Azeite extra virgem</span></td><td>10ml (1 col. sopa)</td><td class="macro macro-g">10g</td><td class="kcal">90</td></tr>
+              <tr><td><span class="food-name">Pasta de amendoim</span></td><td>15g (1 col. sopa)</td><td class="macro macro-g">8g</td><td class="kcal">90</td></tr>
+              <tr><td><span class="food-name">Castanhas/amêndoas</span></td><td>20g</td><td class="macro macro-g">10g</td><td class="kcal">115</td></tr>
+              <tr><td><span class="food-name">Amendoim</span></td><td>20g</td><td class="macro macro-g">10g</td><td class="kcal">120</td></tr>
+              <tr><td><span class="food-name">Abacate</span></td><td>50g</td><td class="macro macro-g">7g</td><td class="kcal">80</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="veg-note">🥗 Vegetais à vontade: alface, tomate, pepino, cenoura, brócolis, abobrinha, pimentão, couve, espinafre</p>
+    </div>
+  </div>
+
+  <!-- ALMOÇO -->
+  <div class="meal-card" style="border-color:#10B981">
+    <button class="meal-header" onclick="toggleMeal(this)" style="background:#f0fdf4">
+      <div>
+        <div class="meal-title">🍽️ Almoço</div>
+        <div class="meal-meta">
+          <span class="meta-tag tag-p">P: 45-55g</span>
+          <span class="meta-tag tag-c">C: 60-70g</span>
+          <span class="meta-tag tag-g">G: 15-18g</span>
+          <span class="meta-tag tag-k">~650 kcal</span>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </button>
+    <div class="meal-body">
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#10B981">
+          🥩 Proteínas — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Prot</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Peito de frango grelhado</span></td><td>200g</td><td class="macro macro-p">60g</td><td class="kcal">330</td></tr>
+              <tr><td><span class="food-name">Patinho grelhado</span></td><td>200g</td><td class="macro macro-p">52g</td><td class="kcal">315</td></tr>
+              <tr><td><span class="food-name">Coxão mole grelhado</span></td><td>200g</td><td class="macro macro-p">52g</td><td class="kcal">335</td></tr>
+              <tr><td><span class="food-name">Tilápia grelhada</span></td><td>220g</td><td class="macro macro-p">54g</td><td class="kcal">260</td></tr>
+              <tr><td><span class="food-name">Linguado grelhado</span></td><td>220g</td><td class="macro macro-p">52g</td><td class="kcal">230</td></tr>
+              <tr><td><span class="food-name">Salmão grelhado</span></td><td>200g</td><td class="macro macro-p">50g</td><td class="kcal">420</td></tr>
+              <tr><td><span class="food-name">Carne moída (patinho)</span></td><td>200g</td><td class="macro macro-p">52g</td><td class="kcal">400</td></tr>
+              <tr><td><span class="food-name">Atum em lata</span><span class="food-obs">⚠️ Máx 2x/semana (sódio)</span></td><td>2 latas (160g)</td><td class="macro macro-p">50g</td><td class="kcal">210</td></tr>
+              <tr><td><span class="food-name">Sardinha em lata</span><span class="food-obs">⚠️ Máx 2x/semana (sódio)</span></td><td>2 latas (120g)</td><td class="macro macro-p">30g</td><td class="kcal">220</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#10B981">
+          🌾 Carboidratos — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Carbo</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Arroz cozido</span></td><td>220g (73g cru)</td><td class="macro macro-c">62g</td><td class="kcal">265</td></tr>
+              <tr><td><span class="food-name">Batata inglesa cozida</span></td><td>315g</td><td class="macro macro-c">63g</td><td class="kcal">270</td></tr>
+              <tr><td><span class="food-name">Batata doce cozida</span></td><td>250g</td><td class="macro macro-c">62g</td><td class="kcal">265</td></tr>
+              <tr><td><span class="food-name">Mandioca/macaxeira cozida</span></td><td>180g</td><td class="macro macro-c">61g</td><td class="kcal">250</td></tr>
+              <tr><td><span class="food-name">Inhame/cará cozido</span></td><td>225g</td><td class="macro macro-c">60g</td><td class="kcal">255</td></tr>
+              <tr><td><span class="food-name">Banana da terra cozida</span></td><td>250g</td><td class="macro macro-c">62g</td><td class="kcal">265</td></tr>
+              <tr><td><span class="food-name">Abóbora cozida</span></td><td>400g</td><td class="macro macro-c">30g</td><td class="kcal">120</td></tr>
+              <tr><td><span class="food-name">Macarrão integral cozido</span></td><td>220g (73g cru)</td><td class="macro macro-c">55g</td><td class="kcal">255</td></tr>
+              <tr><td><span class="food-name">Quinoa cozida</span></td><td>180g (73g cru)</td><td class="macro macro-c">58g</td><td class="kcal">280</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#10B981">
+          🫘 Carboidratos Extra (opcional) <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Carbo</th><th>Prot</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Feijão cozido</span><span class="food-obs">Reduz arroz para 160g cozido se usar</span></td><td>100g (1 concha)</td><td class="macro macro-c">18g</td><td class="macro-ep">5g P</td><td class="kcal">95</td></tr>
+              <tr><td><span class="food-name">Grão de bico cozido</span></td><td>60g (3 col. sopa)</td><td class="macro macro-c">18g</td><td class="macro-ep">5g P</td><td class="kcal">100</td></tr>
+              <tr><td><span class="food-name">Lentilha cozida</span></td><td>100g</td><td class="macro macro-c">20g</td><td class="macro-ep">9g P</td><td class="kcal">115</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#10B981">
+          🫒 Gorduras — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Gord</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Azeite extra virgem</span></td><td>10ml (1 col. sopa)</td><td class="macro macro-g">10g</td><td class="kcal">90</td></tr>
+              <tr><td><span class="food-name">Azeite extra virgem</span></td><td>15ml</td><td class="macro macro-g">14g</td><td class="kcal">126</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="veg-note">🥗 Vegetais à vontade: alface, tomate, pepino, cenoura, brócolis, abobrinha, pimentão, couve, espinafre</p>
+    </div>
+  </div>
+
+  <!-- LANCHE -->
+  <div class="meal-card" style="border-color:#3B82F6">
+    <button class="meal-header" onclick="toggleMeal(this)" style="background:#eff6ff">
+      <div>
+        <div class="meal-title">🥤 Lanche da Tarde</div>
+        <div class="meal-meta">
+          <span class="meta-tag tag-p">P: 25-30g</span>
+          <span class="meta-tag tag-c">C: 25-35g</span>
+          <span class="meta-tag tag-g">G: 5-8g</span>
+          <span class="meta-tag tag-k">~280 kcal</span>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </button>
+    <div class="meal-body">
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#3B82F6">
+          🥩 Proteínas — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Prot</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Whey protein</span></td><td>1 scoop (30g pó)</td><td class="macro macro-p">24g</td><td class="kcal">120</td></tr>
+              <tr><td><span class="food-name">Iogurte grego desnatado</span></td><td>250g</td><td class="macro macro-p">25g</td><td class="kcal">175</td></tr>
+              <tr><td><span class="food-name">Queijo cottage</span></td><td>200g</td><td class="macro macro-p">24g</td><td class="kcal">200</td></tr>
+              <tr><td><span class="food-name">Frango desfiado</span></td><td>150g</td><td class="macro macro-p">45g</td><td class="kcal">225</td></tr>
+              <tr><td><span class="food-name">Peito de peru fatiado</span></td><td>150g</td><td class="macro macro-p">33g</td><td class="kcal">165</td></tr>
+              <tr class="complement"><td><span class="food-name">Ovos cozidos</span><span class="food-obs">⚠️ Complemento — combine com outra proteína</span></td><td>3 unidades</td><td class="macro macro-p">21g</td><td class="kcal">210</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#3B82F6">
+          🌾 Carboidratos — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Carbo</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Aveia em flocos</span></td><td>30g</td><td class="macro macro-c">20g</td><td class="kcal">115</td></tr>
+              <tr><td><span class="food-name">Pão integral</span></td><td>2 fatias</td><td class="macro macro-c">24g</td><td class="kcal">130</td></tr>
+              <tr><td><span class="food-name">Tapioca (goma)</span></td><td>40g</td><td class="macro macro-c">33g</td><td class="kcal">140</td></tr>
+              <tr><td><span class="food-name">Batata doce cozida</span></td><td>150g</td><td class="macro macro-c">37g</td><td class="kcal">165</td></tr>
+              <tr><td><span class="food-name">Banana</span></td><td>1 média</td><td class="macro macro-c">25g</td><td class="kcal">105</td></tr>
+              <tr><td><span class="food-name">Maçã</span></td><td>1 média</td><td class="macro macro-c">20g</td><td class="kcal">80</td></tr>
+              <tr><td><span class="food-name">Mamão</span></td><td>200g</td><td class="macro macro-c">20g</td><td class="kcal">80</td></tr>
+              <tr><td><span class="food-name">Melancia</span></td><td>300g</td><td class="macro macro-c">24g</td><td class="kcal">90</td></tr>
+              <tr><td><span class="food-name">Tangerina</span></td><td>2 unidades</td><td class="macro macro-c">20g</td><td class="kcal">80</td></tr>
+              <tr><td><span class="food-name">Abacaxi</span></td><td>185g</td><td class="macro macro-c">24g</td><td class="kcal">95</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#3B82F6">
+          🫒 Gorduras — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Gord</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Castanhas/amêndoas</span></td><td>10g</td><td class="macro macro-g">5g</td><td class="kcal">60</td></tr>
+              <tr><td><span class="food-name">Pasta de amendoim</span></td><td>10g (1 col. chá)</td><td class="macro macro-g">5g</td><td class="kcal">60</td></tr>
+              <tr><td><span class="food-name">Amendoim</span></td><td>10g</td><td class="macro macro-g">5g</td><td class="kcal">60</td></tr>
+              <tr><td><span class="food-name">Azeite</span></td><td>5ml</td><td class="macro macro-g">5g</td><td class="kcal">45</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CEIA -->
+  <div class="meal-card" style="border-color:#8B5CF6">
+    <button class="meal-header" onclick="toggleMeal(this)" style="background:#f5f3ff">
+      <div>
+        <div class="meal-title">🌙 Ceia / Jantar</div>
+        <div class="meal-meta">
+          <span class="meta-tag tag-p">P: 35-45g</span>
+          <span class="meta-tag tag-c">C: 35-45g</span>
+          <span class="meta-tag tag-g">G: 15-20g</span>
+          <span class="meta-tag tag-k">~480 kcal</span>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </button>
+    <div class="meal-body">
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#8B5CF6">
+          🥩 Proteínas — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Prot</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Peito de frango grelhado</span></td><td>150g</td><td class="macro macro-p">45g</td><td class="kcal">248</td></tr>
+              <tr><td><span class="food-name">Patinho grelhado</span></td><td>180g</td><td class="macro macro-p">47g</td><td class="kcal">305</td></tr>
+              <tr><td><span class="food-name">Tilápia grelhada</span></td><td>200g</td><td class="macro macro-p">50g</td><td class="kcal">240</td></tr>
+              <tr><td><span class="food-name">Linguado grelhado</span></td><td>200g</td><td class="macro macro-p">47g</td><td class="kcal">210</td></tr>
+              <tr><td><span class="food-name">Salmão grelhado</span></td><td>175g</td><td class="macro macro-p">44g</td><td class="kcal">365</td></tr>
+              <tr><td><span class="food-name">Peito de peru fatiado</span></td><td>200g</td><td class="macro macro-p">44g</td><td class="kcal">220</td></tr>
+              <tr><td><span class="food-name">Atum em lata</span><span class="food-obs">⚠️ Máx 2x/semana (sódio)</span></td><td>2 latas (160g)</td><td class="macro macro-p">50g</td><td class="kcal">210</td></tr>
+              <tr class="complement"><td><span class="food-name">Ovos + frango</span><span class="food-obs">⚠️ Complemento ovos + frango combinados</span></td><td>2 ovos + 150g frango</td><td class="macro macro-p">51g</td><td class="kcal">345</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#8B5CF6">
+          🌾 Carboidratos — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Carbo</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Arroz cozido</span></td><td>150g (50g cru)</td><td class="macro macro-c">42g</td><td class="kcal">180</td></tr>
+              <tr><td><span class="food-name">Batata inglesa cozida</span></td><td>220g</td><td class="macro macro-c">44g</td><td class="kcal">190</td></tr>
+              <tr><td><span class="food-name">Batata doce cozida</span></td><td>180g</td><td class="macro macro-c">45g</td><td class="kcal">190</td></tr>
+              <tr><td><span class="food-name">Inhame cozido</span></td><td>180g</td><td class="macro macro-c">45g</td><td class="kcal">190</td></tr>
+              <tr><td><span class="food-name">Mandioca cozida</span></td><td>145g</td><td class="macro macro-c">49g</td><td class="kcal">200</td></tr>
+              <tr><td><span class="food-name">Abóbora cozida</span></td><td>250g</td><td class="macro macro-c">18g</td><td class="kcal">75</td></tr>
+              <tr><td><span class="food-name">Cuscuz cozido</span></td><td>115g (38g cru)</td><td class="macro macro-c">32g</td><td class="kcal">135</td></tr>
+              <tr><td><span class="food-name">Macarrão integral cozido</span></td><td>115g (38g cru)</td><td class="macro macro-c">29g</td><td class="kcal">135</td></tr>
+              <tr><td><span class="food-name">Pão integral</span></td><td>3 fatias</td><td class="macro macro-c">36g</td><td class="kcal">195</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="section-header" onclick="toggleSection(this)" style="background:#8B5CF6">
+          🫒 Gorduras — Escolha 1 <span>▲</span>
+        </button>
+        <div class="section-body open">
+          <table>
+            <thead><tr><th>Alimento</th><th>Qtd</th><th>Gord</th><th>Kcal</th></tr></thead>
+            <tbody>
+              <tr><td><span class="food-name">Azeite extra virgem</span></td><td>10ml (1 col. sopa)</td><td class="macro macro-g">10g</td><td class="kcal">90</td></tr>
+              <tr><td><span class="food-name">Azeite extra virgem</span></td><td>15ml</td><td class="macro macro-g">14g</td><td class="kcal">126</td></tr>
+              <tr><td><span class="food-name">Abacate</span></td><td>60g</td><td class="macro macro-g">9g</td><td class="kcal">100</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="veg-note">🥗 Vegetais à vontade: alface, tomate, pepino, cenoura, brócolis, abobrinha, pimentão, couve, espinafre</p>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<div class="rules-card">
+  <div class="card-title">✅ Regras Inegociáveis</div>
+  <ul>
+    <li>🥚 Ovos: cozidos 8min (gema cremosa) — sempre complemento</li>
+    <li>🍗 Frango: só peito, sem pele</li>
+    <li>🥩 Carne: só patinho, coxão mole, lagarto</li>
+    <li>🐟 Peixe: tilápia, linguado, pescada, salmão</li>
+    <li>🧀 Queijo: cottage, ricota, frescal, muçarela light</li>
+    <li>🫒 Azeite: sempre medir (não derramar)</li>
+    <li>🐟 Atum/sardinha lata: máx 2x/semana (sódio!)</li>
+    <li>🧂 Temperos: alho, limão, ervas, pimenta</li>
+    <li>🚶 15mil passos/dia — inegociável!</li>
+  </ul>
+</div>
+
+<div class="suplem-card">
+  <div class="card-title">💊 Suplementação</div>
+  <div class="suplem-row"><span>Whey protein</span><span>1 scoop — lanche</span></div>
+  <div class="suplem-row"><span>Creatina</span><span>5g — qualquer hora</span></div>
+  <div class="suplem-row"><span>Vitamina D3 + K2</span><span>refeição gordurosa</span></div>
+  <div class="suplem-row"><span>Ômega-3</span><span>2 cáps — almoço/ceia</span></div>
+  <div class="suplem-row"><span>CoQ10 ubiquinol</span><span>manhã</span></div>
+  <div class="suplem-row"><span>Magnésio</span><span>1h antes dormir</span></div>
+</div>
+
+<div class="footer">Proteína: 150g/dia · 2,2g/kg massa magra · Cut sustentável</div>
+
+<script>
+const metas = {
+  musculacao: { kcal: 1900, prot: '150g', carbo: '185g', gord: '65g' },
+  jiu:        { kcal: 2000, prot: '150g', carbo: '205g', gord: '65g' },
+  descanso:   { kcal: 1800, prot: '150g', carbo: '165g', gord: '65g' },
+};
+
+function setDay(day, btn) {
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const m = metas[day];
+  document.getElementById('m-kcal').textContent = m.kcal;
+  document.getElementById('m-prot').textContent = m.prot;
+  document.getElementById('m-carbo').textContent = m.carbo;
+  document.getElementById('m-gord').textContent = m.gord;
+  document.getElementById('alert-jiu').style.display = day === 'jiu' ? 'block' : 'none';
+  document.getElementById('alert-rest').style.display = day === 'descanso' ? 'block' : 'none';
+}
+
+function toggleMeal(btn) {
+  const body = btn.nextElementSibling;
+  const chevron = btn.querySelector('.chevron');
+  const isOpen = body.classList.toggle('open');
+  chevron.classList.toggle('open', isOpen);
+}
+
+function toggleSection(btn) {
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector('span');
+  const isOpen = body.classList.toggle('open');
+  arrow.textContent = isOpen ? '▲' : '▼';
+}
+</script>
+</body>
+</html>
